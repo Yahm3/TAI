@@ -3,31 +3,37 @@ package com.ui;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
-import com.formdev.flatlaf.intellijthemes.FlatArcDarkIJTheme;
 import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
-import com.formdev.flatlaf.intellijthemes.FlatDarkPurpleIJTheme;
 
 //@SuppressWarnings("unused")
 public class Window {
   private static JFrame frame = new JFrame();
+  private JTextArea textArea = new JTextArea();
+  private JLabel label;
+  private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
+      .getMaximumWindowBounds();
 
   public Window() {
     super();
-    GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-    var maxWindow = env.getMaximumWindowBounds();
-
     frame.setSize(new Dimension(maxWindow.width, maxWindow.height));
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
@@ -35,14 +41,46 @@ public class Window {
     frame.setLocationRelativeTo(null);
     frame.setResizable(true);
     frame.setJMenuBar(addMenuBar());
+    frame.add(addTextArea(), BorderLayout.CENTER);
+    frame.add(statusLabel(), BorderLayout.SOUTH);
     setVisible();
   }
 
-  public JMenuBar addMenuBar() {
-    try {
-    } catch (Exception e) {
-    }
+  public JLabel statusLabel() {
+    label = new JLabel();
+    label.setText("Line: 1, Column: 1");
+    label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    return label;
+  }
 
+  public void updateStatus(int lineNum, int colNum) {
+    label.setText("Line: " + lineNum + " Column: " + colNum);
+  }
+
+  public JScrollPane addTextArea() {
+    textArea.setEditable(true);
+    textArea.setLineWrap(true);
+    textArea.setWrapStyleWord(true);
+    textArea.addCaretListener(new CaretListener() {
+      @Override
+      public void caretUpdate(CaretEvent e) {
+        JTextArea editArea = (JTextArea) e.getSource();
+        try {
+          int caretPos = editArea.getCaretPosition();
+          int lineNum = editArea.getLineOfOffset(caretPos);
+          int colNum = caretPos - editArea.getLineStartOffset(lineNum);
+          lineNum += 1;
+          colNum++;
+          updateStatus(lineNum, colNum);
+        } catch (Exception ex) {
+        }
+      }
+    });
+    JScrollPane scrollPane = new JScrollPane(textArea);
+    return scrollPane;
+  }
+
+  public JMenuBar addMenuBar() {
     // :NOTE: Adding of the things here
     JMenuBar menuBar = new JMenuBar();
     menuBar.add(fileMenu());
