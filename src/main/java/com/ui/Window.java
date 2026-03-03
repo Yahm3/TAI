@@ -1,18 +1,22 @@
 package com.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
+import java.io.File;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -53,8 +57,9 @@ public class Window {
     return label;
   }
 
-  public void updateStatus(int lineNum, int colNum) {
-    label.setText("Line: " + lineNum + " Column: " + colNum);
+  public void updateStatus(int line, int col, String perc_str) {
+    System.out.println(perc_str);
+    label.setText("Ln: " + line + " Col: " + col + " " + perc_str);
   }
 
   public JScrollPane addTextArea() {
@@ -67,11 +72,14 @@ public class Window {
         JTextArea editArea = (JTextArea) e.getSource();
         try {
           int caretPos = editArea.getCaretPosition();
-          int lineNum = editArea.getLineOfOffset(caretPos);
-          int colNum = caretPos - editArea.getLineStartOffset(lineNum);
-          lineNum += 1;
-          colNum++;
-          updateStatus(lineNum, colNum);
+          int line = editArea.getLineOfOffset(caretPos);
+          int col = caretPos - editArea.getLineStartOffset(line);
+          int lines = textArea.getLineCount();
+          line++;
+          col++;
+          var perc = (line / (double) lines) * 100;
+          var perc_str = perc == 100 ? "Bottom" : perc == 0 ? "Top" : String.format("%.0f%%", perc);
+          updateStatus(line, col, perc_str);
         } catch (Exception ex) {
         }
       }
@@ -94,7 +102,7 @@ public class Window {
     JMenu fileMenu = new JMenu("File");
 
     // :NOTE: Menu stuff
-    JMenuItem openFolderItem = new JMenuItem("Open Folder");
+    newFileItem = new JMenuItem("New file");
     JMenuItem openItem = new JMenuItem("Open File");
     JMenuItem saveItem = new JMenuItem("Save file");
     JMenuItem saveAsItem = new JMenuItem("Save As");
@@ -105,7 +113,7 @@ public class Window {
     });
 
     // :NOTE: Add to Menu
-    fileMenu.add(openFolderItem);
+    fileMenu.add(newFileItem);
     fileMenu.add(openItem);
     fileMenu.addSeparator();
     fileMenu.add(saveItem);
