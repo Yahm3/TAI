@@ -3,13 +3,17 @@ package com.ui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.io.File;
+// import java.io.File;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
-import javax.swing.JFileChooser;
+import javax.swing.JButton;
+//import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -19,6 +23,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
@@ -30,11 +35,17 @@ import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
 
 //@SuppressWarnings("unused")
 public class Window {
-  private static JFrame frame = new JFrame();
+  public static JFrame findFrame = new JFrame();// :PERF: I don't know if this is dangerous or not!
+  public static JFrame frame = new JFrame();
   private JTextArea textArea = new JTextArea();
   private JLabel label;
+  private static JPanel fileContentPanel = new JPanel();
   private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
       .getMaximumWindowBounds();
+  // private static String DEFAULTPATH = ".";
+  private static JMenuItem newFileItem;
+  // private JFileChooser fileChooser;
+  // private File file;
 
   public Window() {
     super();
@@ -47,7 +58,68 @@ public class Window {
     frame.setJMenuBar(addMenuBar());
     frame.add(addTextArea(), BorderLayout.CENTER);
     frame.add(statusLabel(), BorderLayout.SOUTH);
+    frame.add(addFileContentPanel(), BorderLayout.WEST);
     setVisible();
+  }
+
+  public void findSearch() {
+    findFrame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
+    findFrame.setLayout(new BorderLayout());
+    findFrame.setTitle("Search");
+    findFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    findFrame.setSize(450, 115);
+    findFrame.setResizable(false);
+    findFrame.setLocationRelativeTo(null);
+    findFrame.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosing(WindowEvent e) {
+        textArea.getHighlighter().removeAllHighlights();
+      }
+    });
+
+    JPanel inputP = new JPanel(new FlowLayout());
+
+    JLabel findL = new JLabel("Find: ");
+    JTextField inputF = new JTextField(20);
+
+    JButton searchBtn = new JButton("Search");
+    searchBtn.addActionListener((e) -> {
+      com.features.Search.searchText(textArea, inputF);
+    });
+
+    inputP.add(findL, FlowLayout.LEFT);
+    inputP.add(inputF);
+    inputP.add(searchBtn);
+
+    inputP.setVisible(true);
+    findFrame.add(inputP, BorderLayout.CENTER);
+
+    findFrame.setVisible(true);
+  }
+
+  public JMenu helpMenu() {
+    JMenu helpMenu = new JMenu("Help");
+
+    JMenuItem license = new JMenuItem("Licese");
+    JMenuItem about = new JMenuItem("about");
+
+    // :NOTE: Add to Menu
+    helpMenu.add(license);
+    helpMenu.addSeparator();
+    helpMenu.add(about);
+    System.out.println("[INFO]: helpMenu working...");
+    return helpMenu;
+  }
+
+  public JPanel addFileContentPanel() {
+    fileContentPanel.setBackground(Color.MAGENTA);
+    fileContentPanel.setSize((int) (maxWindow.width * .05), maxWindow.height);
+    fileContentPanel.setVisible(false);
+    return fileContentPanel;
+  }
+
+  public static void setFileContentPanelVisible() {
+    fileContentPanel.setVisible(true);
   }
 
   public JLabel statusLabel() {
@@ -58,7 +130,6 @@ public class Window {
   }
 
   public void updateStatus(int line, int col, String perc_str) {
-    System.out.println(perc_str);
     label.setText("Ln: " + line + " Col: " + col + " " + perc_str);
   }
 
@@ -95,6 +166,7 @@ public class Window {
     menuBar.add(searchMenu());
     menuBar.add(editMenu());
     menuBar.add(settingMenu());
+    menuBar.add(helpMenu());
     return menuBar;
   }
 
@@ -129,15 +201,14 @@ public class Window {
 
     // :NOTE: Menu stuff
     JMenuItem findItem = new JMenuItem("Find...");
-    JMenuItem findNextItem = new JMenuItem("Find Next");
-    JMenuItem findPreviousItem = new JMenuItem("Find Precious");
+    findItem.addActionListener((e) -> {
+      findSearch();
+    });
     JMenuItem replaceItem = new JMenuItem("Replace...");
     JMenuItem gotoLineItem = new JMenuItem("Goto Line...");
 
     // :NOTE: Add to Menu
     searchMenu.add(findItem);
-    searchMenu.add(findNextItem);
-    searchMenu.add(findPreviousItem);
     searchMenu.addSeparator();
     searchMenu.add(replaceItem);
     searchMenu.addSeparator();
