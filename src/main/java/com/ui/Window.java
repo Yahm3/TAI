@@ -4,16 +4,22 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-// import java.io.File;
+import java.awt.TextArea;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-//import javax.swing.JFileChooser;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -27,28 +33,28 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
 
-//@SuppressWarnings("unused")
+@SuppressWarnings("unused")
 public class Window {
-  public static JFrame findFrame = new JFrame();// :PERF: I don't know if this is dangerous or not!
+  public static JFrame findFrame = new JFrame();
+  public static JFrame findAndReplaceFrame = new JFrame();
   public static JFrame frame = new JFrame();
-  private JTextArea textArea = new JTextArea();
+  private static JTextArea textArea = new JTextArea();
   private JLabel label;
   private static JPanel fileContentPanel = new JPanel();
   private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
       .getMaximumWindowBounds();
-  // private static String DEFAULTPATH = ".";
   private static JMenuItem newFileItem;
-  // private JFileChooser fileChooser;
-  // private File file;
 
   public Window() {
     super();
+    frame.setFont(textArea.getFont());
     frame.setSize(new Dimension(maxWindow.width, maxWindow.height));
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
@@ -60,6 +66,53 @@ public class Window {
     frame.add(statusLabel(), BorderLayout.SOUTH);
     frame.add(addFileContentPanel(), BorderLayout.WEST);
     setVisible();
+  }
+
+  private void findAndReplace() {
+    findAndReplaceFrame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
+    findAndReplaceFrame.setLayout(new BorderLayout());
+    findAndReplaceFrame.setTitle("Find and Replace");
+    findAndReplaceFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    findAndReplaceFrame.setSize(350, 315);
+    findAndReplaceFrame.setResizable(false);
+    findAndReplaceFrame.setLocationRelativeTo(null);
+
+    var findP = new JPanel(new FlowLayout());
+    var findLabel = new JLabel("Find: ");
+    var findInputF = new JTextField(20);
+    findP.add(findLabel, FlowLayout.LEFT);
+    findP.add(findInputF);
+    findP.setVisible(true);
+
+    var replaceP = new JPanel(new FlowLayout());
+    var replaceLabel = new JLabel("Replace With: ");
+    var replaceInputF = new JTextField(20);
+    replaceP.add(replaceLabel, FlowLayout.LEFT);
+    replaceP.add(replaceInputF);
+    replaceP.setVisible(true);
+
+    var replace = new JButton("Replace");
+    replace.addActionListener((e) -> {
+      System.out.println("Replace");
+    });
+
+    var replaceAll = new JButton("Replace All");
+    replaceAll.addActionListener((e) -> {// :NOTE: There is a method in Java called replaceAll that replaces all
+                                         // occurances of input string
+      System.out.println("Replace All");
+    });
+
+    var replaceBtnP = new JPanel(new FlowLayout());
+    replaceBtnP.add(replace);
+    replaceBtnP.add(replaceAll);
+    replaceBtnP.setVisible(true);
+
+    findAndReplaceFrame.add(findP, BorderLayout.NORTH);
+    findAndReplaceFrame.add(replaceP, BorderLayout.CENTER);
+    findAndReplaceFrame.add(replaceBtnP, BorderLayout.SOUTH);
+
+    findAndReplaceFrame.pack();
+    findAndReplaceFrame.setVisible(true);
   }
 
   public void findSearch() {
@@ -170,17 +223,53 @@ public class Window {
     return menuBar;
   }
 
+  private void openFile(JTextArea area) {
+    if (!area.getText().isEmpty() || !area.getText().isBlank()) {
+      var choice = JOptionPane.showConfirmDialog(frame, "Save file before closing?", "Open File",
+          JOptionPane.YES_NO_OPTION,
+          JOptionPane.INFORMATION_MESSAGE);
+      if (choice == JOptionPane.YES_OPTION) {
+        // :TODO: save given file from the textArea
+      }
+    }
+    JFileChooser fileChooser = new JFileChooser();
+    // :TODO: Procedurally add FileNameExtensionFilters
+    fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
+    var checkInput = fileChooser.showOpenDialog(frame);
+    if (checkInput == JFileChooser.APPROVE_OPTION) {
+      File openedFile = fileChooser.getSelectedFile();
+      try {
+        FileReader fileReader = new FileReader(openedFile);
+        BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+        String string1 = "";
+        StringBuilder sb = new StringBuilder();
+        while ((string1 = bufferedReader.readLine()) != null) {
+          sb.append(string1).append("\n");
+        }
+        textArea.setText(sb.toString());
+        bufferedReader.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
   public JMenu fileMenu() {
     JMenu fileMenu = new JMenu("File");
 
     // :NOTE: Menu stuff
     newFileItem = new JMenuItem("New file");
     JMenuItem openItem = new JMenuItem("Open File");
+    openItem.addActionListener((e) -> {
+      openFile(textArea);
+    });
     JMenuItem saveItem = new JMenuItem("Save file");
     JMenuItem saveAsItem = new JMenuItem("Save As");
     JMenuItem exitItem = new JMenuItem("Exit");
 
     exitItem.addActionListener((e) -> {
+      System.out.println("[INFO]: Exiting application...");
       System.exit(0);
     });
 
@@ -205,6 +294,9 @@ public class Window {
       findSearch();
     });
     JMenuItem replaceItem = new JMenuItem("Replace...");
+    replaceItem.addActionListener((e) -> {
+      findAndReplace();
+    });
     JMenuItem gotoLineItem = new JMenuItem("Goto Line...");
 
     // :NOTE: Add to Menu
@@ -244,9 +336,7 @@ public class Window {
     return editMenu;
   }
 
-  public JMenu settingMenu() {
-    JMenu settingMenu = new JMenu("Setting");
-
+  private static JMenu themeMenu() {
     JMenu theme = new JMenu("theme");
     String[] themes = { "Light", "Dark", "Dracula", "Gradient Fuchsia", "Gradient Blue", "Gradient Green", "Cyan light",
         "darkPurple" };
@@ -280,8 +370,33 @@ public class Window {
       });
       theme.add(item);
     }
+    return theme;
+  }
 
-    settingMenu.add(theme);
+  private static JMenu fontMenu() {// :BUG: This method somehow does not change the font
+    JMenu fontMenu = new JMenu("Font");
+    String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+    for (String font_name : fonts) {
+      JMenuItem item = new JMenuItem(font_name);
+      item.addActionListener((e) -> {
+        frame.setFont(new Font(font_name, Font.PLAIN, 14));
+        // :NOTE: Update after setting the font
+        frame.revalidate();
+        frame.repaint();
+        System.out.println("[INFO] Current font: " + font_name);
+      });
+      fontMenu.add(item);
+    }
+    // :NOTE: Total number of fonts: 2252
+    System.out.println("Area font: " + textArea.getFont());
+    System.out.println("JFrame font: " + frame.getFont());
+    return fontMenu;
+  }
+
+  public JMenu settingMenu() {
+    JMenu settingMenu = new JMenu("Setting");
+    settingMenu.add(themeMenu());
+    settingMenu.add(fontMenu());
     System.out.println("[INFO]: settingMenu working...");
     return settingMenu;
   }
