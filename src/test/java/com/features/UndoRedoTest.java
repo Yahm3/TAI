@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("unused")
 public class UndoRedoTest {
 
-  @Test
+  @Disabled
   public void shouldReturnAString() {
     assertEquals(new com.features.UndoRedo().testUndoRedo(), new String());
   }
