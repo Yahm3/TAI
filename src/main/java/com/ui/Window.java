@@ -97,9 +97,15 @@ public class Window {
     });
 
     var replaceAll = new JButton("Replace All");
-    replaceAll.addActionListener((e) -> {// :NOTE: There is a method in Java called replaceAll that replaces all
-                                         // occurances of input string
-      System.out.println("Replace All");
+    replaceAll.addActionListener((e) -> {
+      var selectedText = textArea.getSelectedText();
+
+      if (selectedText != null) {
+        findInputF.setText(selectedText);
+        textArea.replaceSelection(replaceInputF.getText());
+        return;
+      }
+      textArea.setText(textArea.getText().replaceAll(findInputF.getText(), replaceInputF.getText()));
     });
 
     var replaceBtnP = new JPanel(new FlowLayout());
@@ -186,8 +192,15 @@ public class Window {
     label.setText("Ln: " + line + " Col: " + col + " " + perc_str);
   }
 
+  public String startupInfo() {
+    return "author: https://github.com/Yahm3/" +
+        "\nVersion: 0.1.0" +
+        "\nAbout: This version just has some features as it this application is still being developed";
+  }
+
   public JScrollPane addTextArea() {
     textArea.setEditable(true);
+    textArea.setText(startupInfo());
     textArea.setLineWrap(true);
     textArea.setWrapStyleWord(true);
     textArea.addCaretListener(new CaretListener() {
@@ -232,7 +245,7 @@ public class Window {
         // :TODO: save given file from the textArea
       }
     }
-    JFileChooser fileChooser = new JFileChooser();
+    JFileChooser fileChooser = new JFileChooser("./");
     // :TODO: Procedurally add FileNameExtensionFilters
     fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
     var checkInput = fileChooser.showOpenDialog(frame);
