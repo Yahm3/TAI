@@ -35,6 +35,7 @@ import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.features.Search;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -44,6 +45,7 @@ import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
 public class Window {
   public static JFrame findFrame = new JFrame();
   public static JFrame findAndReplaceFrame = new JFrame();
+  public static JFrame gotoLineFrame = new JFrame();
   public static JFrame frame = new JFrame();
   private static JTextArea textArea = new JTextArea();
   private JLabel label;
@@ -51,6 +53,7 @@ public class Window {
   private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
       .getMaximumWindowBounds();
   private static JMenuItem newFileItem;
+  private int lastFoundPosition = 0;
 
   public Window() {
     super();
@@ -66,6 +69,51 @@ public class Window {
     frame.add(statusLabel(), BorderLayout.SOUTH);
     frame.add(addFileContentPanel(), BorderLayout.WEST);
     setVisible();
+  }
+
+  private void gotoLine() {
+    System.out.println("Caret Position before change: " + textArea.getCaretPosition());
+    gotoLineFrame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
+    gotoLineFrame.setLayout(new BorderLayout());
+    gotoLineFrame.setTitle("Find and Replace");
+    gotoLineFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    gotoLineFrame.setSize(350, 315);
+    gotoLineFrame.setResizable(false);
+    gotoLineFrame.setLocationRelativeTo(null);
+
+    var gotoLineP = new JPanel(new FlowLayout());
+    var gotoLineLabel = new JLabel("Line: ");
+    var gotoLineInputF = new JTextField(20);
+    var userInput = new JButton("Go");
+    userInput.addActionListener((e) -> {
+      try {
+        int lineNum = Integer.parseInt(gotoLineInputF.getText());
+        int totalLines = textArea.getLineCount();
+
+        if (lineNum > 0 && lineNum <= totalLines) {
+          int offset = textArea.getLineStartOffset(lineNum - 1);
+          textArea.setCaretPosition(offset);
+
+          textArea.requestFocusInWindow();
+          gotoLineFrame.dispose();
+        } else {
+          Search.vibrate(gotoLineFrame);
+        }
+      } catch (NumberFormatException nfe) {
+        Search.vibrate(gotoLineFrame);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
+    });
+
+    gotoLineP.add(gotoLineLabel, FlowLayout.LEFT);
+    gotoLineP.add(gotoLineInputF);
+    gotoLineP.add(userInput);
+    gotoLineP.setVisible(true);
+
+    gotoLineFrame.add(gotoLineP);
+    gotoLineFrame.pack();
+    gotoLineFrame.setVisible(true);
   }
 
   private void findAndReplace() {
@@ -93,7 +141,29 @@ public class Window {
 
     var replace = new JButton("Replace");
     replace.addActionListener((e) -> {
-      System.out.println("Replace");
+      String findText = findInputF.getText();
+      String replaceText = replaceInputF.getText();
+      String selection = textArea.getSelectedText();
+
+      if (selection != null && selection.equals(findText)) {
+        textArea.replaceSelection(replaceText);
+      }
+
+      String fullText = textArea.getText();
+      int nextIndex = fullText.indexOf(findText, textArea.getCaretPosition());
+
+      if (nextIndex != -1) {
+        textArea.setSelectionStart(nextIndex);
+        textArea.setSelectionEnd(nextIndex + findText.length());
+      } else {
+        int wrapIndex = fullText.indexOf(findText, 0);
+        if (wrapIndex != -1) {
+          textArea.setSelectionStart(wrapIndex);
+          textArea.setSelectionEnd(wrapIndex + findText.length());
+        } else {
+          Search.vibrate(findAndReplaceFrame);
+        }
+      }
     });
 
     var replaceAll = new JButton("Replace All");
@@ -108,7 +178,8 @@ public class Window {
       textArea.setText(textArea.getText().replaceAll(findInputF.getText(), replaceInputF.getText()));
     });
 
-    var replaceBtnP = new JPanel(new FlowLayout());
+    var replaceBtnP = new JPanel(
+        new FlowLayout());
     replaceBtnP.add(replace);
     replaceBtnP.add(replaceAll);
     replaceBtnP.setVisible(true);
@@ -311,6 +382,9 @@ public class Window {
       findAndReplace();
     });
     JMenuItem gotoLineItem = new JMenuItem("Goto Line...");
+    gotoLineItem.addActionListener((e) -> {
+      gotoLine();// :NOTE: Default is ZERO
+    });
 
     // :NOTE: Add to Menu
     searchMenu.add(findItem);
