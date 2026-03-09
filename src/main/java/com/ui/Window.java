@@ -7,15 +7,15 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.awt.TextArea;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -30,10 +30,18 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.Document;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
+import javax.swing.Action;
 
 import com.features.Search;
 import com.formdev.flatlaf.FlatDarculaLaf;
@@ -41,7 +49,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
 
-@SuppressWarnings("unused")
+//@SuppressWarnings("unused")
 public class Window {
   public static JFrame findFrame = new JFrame();
   public static JFrame findAndReplaceFrame = new JFrame();
@@ -53,7 +61,8 @@ public class Window {
   private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
       .getMaximumWindowBounds();
   private static JMenuItem newFileItem;
-  private int lastFoundPosition = 0;
+  private final UndoManager undo;
+  private Document doc;
 
   public Window() {
     super();
@@ -68,11 +77,53 @@ public class Window {
     frame.add(addTextArea(), BorderLayout.CENTER);
     frame.add(statusLabel(), BorderLayout.SOUTH);
     frame.add(addFileContentPanel(), BorderLayout.WEST);
+
+    undo = new UndoManager();
+    doc = textArea.getDocument();
+
+    // Listen for undo and redo events
+    doc.addUndoableEditListener(new UndoableEditListener() {
+      @Override
+      public void undoableEditHappened(UndoableEditEvent e) {
+        undo.addEdit(e.getEdit());
+      }
+    });
+
+    // Create an undo action and add it to the text component
+    textArea.getActionMap().put("Undo", new AbstractAction("Undo") {
+      @Override
+      public void actionPerformed(ActionEvent evt) {
+        try {
+          if (undo.canUndo()) {
+            undo.undo();
+          }
+        } catch (CannotUndoException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+    // Bind the undo action to ctl-Z
+    textArea.getInputMap().put(KeyStroke.getKeyStroke("Control Z"), "Undo");
+
+    // Create a redo action and add it to textArea
+    textArea.getActionMap().put("Redo", new AbstractAction("Redo") {
+      @Override
+      public void actionPerformed(ActionEvent evt) {
+        try {
+          if (undo.canRedo()) {
+            undo.redo();
+          }
+        } catch (CannotRedoException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+    // Bind the undo action to ctl-Y
+    textArea.getInputMap().put(KeyStroke.getKeyStroke("Control Y"), "Redo");
     setVisible();
   }
 
   private void gotoLine() {
-    System.out.println("Caret Position before change: " + textArea.getCaretPosition());
     gotoLineFrame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
     gotoLineFrame.setLayout(new BorderLayout());
     gotoLineFrame.setTitle("Find and Replace");
@@ -402,6 +453,31 @@ public class Window {
     // :NOTE: Menu stuff
     JMenuItem undoItem = new JMenuItem("Undo");
     JMenuItem redoItem = new JMenuItem("Redo");
+    Action undoAction = new AbstractAction("Undo") {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        if (undo.canUndo())
+          undo.undo();
+      }
+    };
+
+    Action redoAction = new AbstractAction("Redo") {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        if (undo.canRedo())
+          undo.redo();
+      }
+    };
+
+    undoItem.addActionListener(undoAction);
+    redoItem.addActionListener(redoAction);
+
+    textArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
+    textArea.getActionMap().put("Undo", undoAction);
+    textArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
+    textArea.getActionMap().put("Redo", redoAction);
+
+    // :TODO: Implement these features
     JMenuItem cutItem = new JMenuItem("Cut");
     JMenuItem copyItem = new JMenuItem("Copy");
     JMenuItem pasteItem = new JMenuItem("Paste");
@@ -460,13 +536,14 @@ public class Window {
     return theme;
   }
 
-  private static JMenu fontMenu() {// :BUG: This method somehow does not change the font
+  private static JMenu fontMenu() {
     JMenu fontMenu = new JMenu("Font");
     String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
     for (String font_name : fonts) {
       JMenuItem item = new JMenuItem(font_name);
       item.addActionListener((e) -> {
         frame.setFont(new Font(font_name, Font.PLAIN, 14));
+        textArea.setFont(new Font(font_name, Font.PLAIN, 14));
         // :NOTE: Update after setting the font
         frame.revalidate();
         frame.repaint();
