@@ -11,9 +11,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -358,13 +361,68 @@ public class Window {
     return menuBar;
   }
 
+  private void saveFile(JTextArea area) {
+    if (area.getText().isEmpty() || area.getText().isBlank()) {
+      /*
+       * Save what because there is nothing already saved?
+       * But at the same time if the file was already opened from a saved state that
+       * counts as a change and therefore the user should be
+       * able to save the file even if it's empty
+       * :TODO: Do something here
+       */
+      Search.vibrate(frame);
+      return;
+    }
+    try {
+      String textCaptured = area.getText();
+      // :TODO: Procedurally add FileNameExtensionFilters
+      JFileChooser fileChooser = new JFileChooser("./");
+      fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
+      var checkInput = fileChooser.showSaveDialog(frame);
+      if (checkInput == JFileChooser.APPROVE_OPTION) {
+        File file = fileChooser.getSelectedFile();
+        RandomAccessFile raf = new RandomAccessFile(file, "rw");
+        if ((raf.readLine()) != null) {
+          var choice = JOptionPane.showConfirmDialog(frame, "Do you want to override current file", "Save file",
+              JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+          if (choice == JOptionPane.YES_OPTION) {
+            var _checkInput = fileChooser.showSaveDialog(frame);
+            if (_checkInput == JFileChooser.APPROVE_OPTION) {
+              try {
+                BufferedWriter out = new BufferedWriter(new FileWriter(file));
+                out.write(textCaptured + "\n".trim());
+                out.flush();
+                out.close();
+                System.out.println("[INFO]: Saved file: " + file.getName() + " at " + file.getAbsolutePath());
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+              raf.close();
+            } else {
+              raf.close();
+              return;
+            }
+          } else {
+            raf.close();
+            return;
+          }
+        }
+
+      } else {
+        JOptionPane.showMessageDialog(frame, "Could not save file");
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private void openFile(JTextArea area) {
     if (!area.getText().isEmpty() || !area.getText().isBlank()) {
       var choice = JOptionPane.showConfirmDialog(frame, "Save file before closing?", "Open File",
           JOptionPane.YES_NO_OPTION,
-          JOptionPane.INFORMATION_MESSAGE);
+          JOptionPane.QUESTION_MESSAGE);
       if (choice == JOptionPane.YES_OPTION) {
-        // :TODO: save given file from the textArea
+        saveFile(textArea);
       }
     }
     JFileChooser fileChooser = new JFileChooser("./");
@@ -400,6 +458,9 @@ public class Window {
       openFile(textArea);
     });
     JMenuItem saveItem = new JMenuItem("Save file");
+    saveItem.addActionListener((e) -> {
+      saveFile(textArea);
+    });
     JMenuItem saveAsItem = new JMenuItem("Save As");
     JMenuItem exitItem = new JMenuItem("Exit");
 
