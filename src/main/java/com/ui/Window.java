@@ -55,8 +55,8 @@ import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
 //@SuppressWarnings("unused")
 public class Window {
   public static JFrame findFrame = new JFrame();
-  public static JFrame findAndReplaceFrame = new JFrame();
-  public static JFrame gotoLineFrame = new JFrame();
+  private static JFrame findAndReplaceFrame = new JFrame();
+  private static JFrame gotoLineFrame = new JFrame();
   public static JFrame frame = new JFrame();
   private static JTextArea textArea = new JTextArea();
   private JLabel label;
@@ -597,24 +597,61 @@ public class Window {
     return theme;
   }
 
+  public static void updateFont(String name, int style, int size) {
+    String newName = (name != null) ? name : textArea.getFont().getFamily();
+    int newStyle = (style != -1) ? style : textArea.getFont().getStyle();
+    int newSize = (size != -1) ? size : textArea.getFont().getSize();
+
+    Font newFont = new Font(newName, newStyle, newSize);
+    textArea.setFont(newFont);
+  }
+
+  private static JMenu fontStyleMenu() {
+    JMenu fontSizeMenu = new JMenu("Font Style");
+    JMenuItem plain = new JMenuItem("PLAIN");
+    JMenuItem bold = new JMenuItem("BOLD");
+    JMenuItem italic = new JMenuItem("ITALIC");
+    plain.addActionListener((e) -> {
+      updateFont(null, Font.PLAIN, -1);
+    });
+    bold.addActionListener((e) -> {
+      updateFont(null, Font.BOLD, -1);
+    });
+    italic.addActionListener((e) -> {
+      updateFont(null, Font.ITALIC, -1);
+
+    });
+    fontSizeMenu.add(plain);
+    fontSizeMenu.add(bold);
+    fontSizeMenu.add(italic);
+    return fontSizeMenu;
+  }
+
+  private static JMenu fontSizeMenu() {
+    JMenu fontSizeMenu = new JMenu("Font Size");
+    int[] sizes = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+        28, 29, 30, 31, 32, 33, 34, 35 };
+    for (int _sizes : sizes) {
+      JMenuItem item = new JMenuItem("" + _sizes);
+      item.addActionListener((e) -> {
+        updateFont(null, -1, _sizes);
+      });
+      fontSizeMenu.add(item);
+    }
+    return fontSizeMenu;
+  }
+
   private static JMenu fontMenu() {
-    JMenu fontMenu = new JMenu("Font");
+    JMenu fontMenu = new JMenu("Font Family");
     String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
     for (String font_name : fonts) {
       JMenuItem item = new JMenuItem(font_name);
       item.addActionListener((e) -> {
-        frame.setFont(new Font(font_name, Font.PLAIN, 14));
-        textArea.setFont(new Font(font_name, Font.PLAIN, 14));
-        // :NOTE: Update after setting the font
-        frame.revalidate();
-        frame.repaint();
-        System.out.println("[INFO] Current font: " + font_name);
+        updateFont(font_name, -1, -1);
       });
       fontMenu.add(item);
     }
     // :NOTE: Total number of fonts: 2252
-    System.out.println("Area font: " + textArea.getFont());
-    System.out.println("JFrame font: " + frame.getFont());
     return fontMenu;
   }
 
@@ -622,6 +659,8 @@ public class Window {
     JMenu settingMenu = new JMenu("Setting");
     settingMenu.add(themeMenu());
     settingMenu.add(fontMenu());
+    settingMenu.add(fontStyleMenu());
+    settingMenu.add(fontSizeMenu());
     System.out.println("[INFO]: settingMenu working...");
     return settingMenu;
   }
