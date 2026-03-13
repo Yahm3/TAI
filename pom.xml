@@ -16,6 +16,13 @@
   </properties>
 
   <dependencies>
+    <!-- Source: https://mvnrepository.com/artifact/com.fifesoft/autocomplete -->
+    <dependency>
+      <groupId>com.fifesoft</groupId>
+      <artifactId>autocomplete</artifactId>
+      <version>3.3.3</version>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>com.formdev</groupId>
       <artifactId>flatlaf</artifactId>
