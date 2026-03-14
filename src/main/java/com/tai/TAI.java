@@ -1,18 +1,22 @@
 package com.tai;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import com.ui.Window;
+import com.features.EditorSettings;
 import com.ui.Splash;
 
-// @SuppressWarnings("unused")
+@SuppressWarnings("unused")
 public class TAI {
   public static void init() {
     SwingUtilities.invokeLater(() -> {
       try {
-        com.formdev.flatlaf.intellijthemes.FlatGradiantoNatureGreenIJTheme.setup();
+        String savedTheme = EditorSettings.getSavedTheme();
+        UIManager.setLookAndFeel(savedTheme);
       } catch (Exception e) {
         System.err.println("WARNING: Could not setup flatlaf");
+        com.formdev.flatlaf.intellijthemes.FlatDarkFlatIJTheme.setup();
       }
       new Window();
     });

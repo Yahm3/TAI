@@ -35,6 +35,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.event.UndoableEditEvent;
@@ -44,8 +45,13 @@ import javax.swing.text.Document;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
+
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+
 import javax.swing.Action;
 
+import com.features.EditorSettings;
 import com.features.Search;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
@@ -58,7 +64,7 @@ public class Window {
   private static JFrame findAndReplaceFrame = new JFrame();
   private static JFrame gotoLineFrame = new JFrame();
   public static JFrame frame = new JFrame();
-  private static JTextArea textArea = new JTextArea();
+  private static RSyntaxTextArea textArea = new RSyntaxTextArea();
   private JLabel label;
   private static JPanel fileContentPanel = new JPanel();
   private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
@@ -80,6 +86,13 @@ public class Window {
     frame.add(addTextArea(), BorderLayout.CENTER);
     frame.add(statusLabel(), BorderLayout.SOUTH);
     frame.add(addFileContentPanel(), BorderLayout.WEST);
+
+    // :NOTE: RSyntaxTextArea stuff
+    textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+    textArea.setCodeFoldingEnabled(true);
+    textArea.setBackground(frame.getBackground());
+    textArea.setHighlightCurrentLine(false);
+    textArea.setFont(new Font(frame.getFont().getFontName(), frame.getFont().getStyle(), frame.getFont().getSize()));
 
     undo = new UndoManager();
     doc = textArea.getDocument();
@@ -123,7 +136,30 @@ public class Window {
     });
     // Bind the undo action to ctl-Y
     textArea.getInputMap().put(KeyStroke.getKeyStroke("Control Y"), "Redo");
+
+    String savedTheme = EditorSettings.getSavedTheme();
+    applyTheme(savedTheme);
+
+    String family = EditorSettings.getSavedFamily();
+    int style = EditorSettings.getSavedStyle();
+    int size = EditorSettings.getSavedSize();
+    updateFont(family, style, size); // This method you already have!
     setVisible();
+  }
+
+  private void applyTheme(String themeClassName) {
+    try {
+      UIManager.setLookAndFeel(themeClassName);
+      SwingUtilities.updateComponentTreeUI(frame);
+      EditorSettings.saveTheme(themeClassName);
+      if (textArea != null) {
+        textArea.setBackground(frame.getBackground());
+      }
+      System.out.println("[INFO] Theme applied and saved: " + themeClassName);
+    } catch (Exception e) {
+      System.err.println("[ERROR] Failed to apply theme: " + themeClassName);
+      e.printStackTrace();
+    }
   }
 
   private void gotoLine() {
@@ -569,24 +605,36 @@ public class Window {
       JMenuItem item = new JMenuItem(theme_name);
 
       item.addActionListener((e) -> {
+        String themeClass = "";
         if (theme_name.equalsIgnoreCase("light")) {
           FlatLightLaf.setup();
+          themeClass = FlatLightLaf.class.getName();
         } else if (theme_name.equalsIgnoreCase("dark")) {
           FlatDarkLaf.setup();
+          themeClass = FlatDarkLaf.class.getName();
         } else if (theme_name.equalsIgnoreCase("Dracula")) {
           FlatDarculaLaf.setup();
+          themeClass = FlatDarculaLaf.class.getName();
         } else if (theme_name.equalsIgnoreCase("Cyan light")) {
           FlatCyanLightIJTheme.setup();
+          themeClass = FlatCyanLightIJTheme.class.getName();
         } else if (theme_name.equalsIgnoreCase("darkPurple")) {
           com.formdev.flatlaf.intellijthemes.FlatDarkPurpleIJTheme.setup();
+          themeClass = com.formdev.flatlaf.intellijthemes.FlatDarkPurpleIJTheme.class.getName();
         } else if (theme_name.equalsIgnoreCase("Gradient Green")) {
           com.formdev.flatlaf.intellijthemes.FlatGradiantoNatureGreenIJTheme.setup();
+          themeClass = com.formdev.flatlaf.intellijthemes.FlatGradiantoNatureGreenIJTheme.class.getName();
         } else if (theme_name.equalsIgnoreCase("Gradient Fuchsia")) {
           com.formdev.flatlaf.intellijthemes.FlatGradiantoDarkFuchsiaIJTheme.setup();
+          themeClass = com.formdev.flatlaf.intellijthemes.FlatGradiantoDarkFuchsiaIJTheme.class.getName();
         } else if (theme_name.equalsIgnoreCase("Gradient Blue")) {
           com.formdev.flatlaf.intellijthemes.FlatGradiantoMidnightBlueIJTheme.setup();
+          themeClass = FlatCyanLightIJTheme.class.getName();
         } else {
           JOptionPane.showMessageDialog(null, "Could not set " + theme_name, "ERROR", JOptionPane.ERROR_MESSAGE);
+        }
+        if (!themeClass.isEmpty()) {
+          EditorSettings.saveTheme(themeClass);
         }
 
         SwingUtilities.updateComponentTreeUI(frame);
@@ -598,12 +646,16 @@ public class Window {
   }
 
   public static void updateFont(String name, int style, int size) {
-    String newName = (name != null) ? name : textArea.getFont().getFamily();
-    int newStyle = (style != -1) ? style : textArea.getFont().getStyle();
-    int newSize = (size != -1) ? size : textArea.getFont().getSize();
+    Font currentFont = textArea.getFont();
+
+    String newName = (name != null) ? name : currentFont.getFamily();
+    int newStyle = (style != -1) ? style : currentFont.getStyle();
+    int newSize = (size != -1) ? size : currentFont.getSize();
 
     Font newFont = new Font(newName, newStyle, newSize);
     textArea.setFont(newFont);
+
+    EditorSettings.saveFont(newName, newStyle, newSize);
   }
 
   private static JMenu fontStyleMenu() {
