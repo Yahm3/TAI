@@ -31,6 +31,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
@@ -64,7 +65,9 @@ public class Window {
   private static JFrame findAndReplaceFrame = new JFrame();
   private static JFrame gotoLineFrame = new JFrame();
   public static JFrame frame = new JFrame();
-  private static RSyntaxTextArea textArea = new RSyntaxTextArea();
+  // private static RSyntaxTextArea getActiveTextArea() = new RSyntaxTextArea();
+  private static int tabCount = 1;
+  private static JTabbedPane tabbedPane = new JTabbedPane();
   private JLabel label;
   private static JPanel fileContentPanel = new JPanel();
   private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
@@ -75,7 +78,9 @@ public class Window {
 
   public Window() {
     super();
-    frame.setFont(textArea.getFont());
+    addNewTab("TAI V0.0.1" + tabCount++, startupInfo());
+    frame.setFont(
+        new Font(EditorSettings.getSavedFamily(), EditorSettings.getSavedStyle(), EditorSettings.getSavedSize()));
     frame.setSize(new Dimension(maxWindow.width, maxWindow.height));
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
@@ -83,19 +88,20 @@ public class Window {
     frame.setLocationRelativeTo(null);
     frame.setResizable(true);
     frame.setJMenuBar(addMenuBar());
-    frame.add(addTextArea(), BorderLayout.CENTER);
+    frame.add(tabbedPane, BorderLayout.CENTER);
     frame.add(statusLabel(), BorderLayout.SOUTH);
     frame.add(addFileContentPanel(), BorderLayout.WEST);
 
     // :NOTE: RSyntaxTextArea stuff
-    textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
-    textArea.setCodeFoldingEnabled(true);
-    textArea.setBackground(frame.getBackground());
-    textArea.setHighlightCurrentLine(false);
-    textArea.setFont(new Font(frame.getFont().getFontName(), frame.getFont().getStyle(), frame.getFont().getSize()));
+    RSyntaxTextArea active = getActiveTextArea();
+    active.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+    active.setCodeFoldingEnabled(true);
+    active.setBackground(frame.getBackground());
+    active.setHighlightCurrentLine(false);
+    active.setFont(new Font(frame.getFont().getFontName(), frame.getFont().getStyle(), frame.getFont().getSize()));
 
     undo = new UndoManager();
-    doc = textArea.getDocument();
+    doc = getActiveTextArea().getDocument();
 
     // Listen for undo and redo events
     doc.addUndoableEditListener(new UndoableEditListener() {
@@ -106,7 +112,7 @@ public class Window {
     });
 
     // Create an undo action and add it to the text component
-    textArea.getActionMap().put("Undo", new AbstractAction("Undo") {
+    getActiveTextArea().getActionMap().put("Undo", new AbstractAction("Undo") {
       @Override
       public void actionPerformed(ActionEvent evt) {
         try {
@@ -119,10 +125,10 @@ public class Window {
       }
     });
     // Bind the undo action to ctl-Z
-    textArea.getInputMap().put(KeyStroke.getKeyStroke("Control Z"), "Undo");
+    getActiveTextArea().getInputMap().put(KeyStroke.getKeyStroke("Control Z"), "Undo");
 
-    // Create a redo action and add it to textArea
-    textArea.getActionMap().put("Redo", new AbstractAction("Redo") {
+    // Create a redo action and add it to getActiveTextArea()
+    getActiveTextArea().getActionMap().put("Redo", new AbstractAction("Redo") {
       @Override
       public void actionPerformed(ActionEvent evt) {
         try {
@@ -135,7 +141,7 @@ public class Window {
       }
     });
     // Bind the undo action to ctl-Y
-    textArea.getInputMap().put(KeyStroke.getKeyStroke("Control Y"), "Redo");
+    getActiveTextArea().getInputMap().put(KeyStroke.getKeyStroke("Control Y"), "Redo");
 
     String savedTheme = EditorSettings.getSavedTheme();
     applyTheme(savedTheme);
@@ -147,13 +153,56 @@ public class Window {
     setVisible();
   }
 
+  private JPanel createTabTitleComponent(String title) {
+    JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+    panel.setOpaque(false);
+
+    JLabel titleLabel = new JLabel(title);
+    JButton closeButton = new JButton("x");
+
+    closeButton.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.GRAY),
+        BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+    closeButton.setContentAreaFilled(false);
+    closeButton.setRolloverEnabled(true);
+    closeButton.putClientProperty("JButton.hoveredBackground", new Color(255, 100, 100, 100));
+    closeButton.putClientProperty("JButton.hoveredBackground", Color.RED);
+    closeButton.setFocusable(false);
+    closeButton.setPreferredSize(new Dimension(20, 20));
+
+    closeButton.addActionListener(e -> {
+      int index = tabbedPane.indexOfTabComponent(panel);
+      if (index != -1) {
+        // TODO: Add a "Save before closing?" check here
+        tabbedPane.remove(index);
+
+        if (tabbedPane.getTabCount() == 0) {
+          addNewTab("untitled " + tabCount++, "");
+        }
+      }
+    });
+
+    panel.add(titleLabel);
+    panel.add(closeButton);
+    return panel;
+  }
+
+  private static RSyntaxTextArea getActiveTextArea() {
+    if (tabbedPane.getTabCount() == 0)
+      return null;
+    JScrollPane scrollPane = (JScrollPane) tabbedPane.getSelectedComponent();
+    if (scrollPane != null) {
+      return (RSyntaxTextArea) scrollPane.getViewport().getView();
+    }
+    return null;
+  }
+
   private void applyTheme(String themeClassName) {
     try {
       UIManager.setLookAndFeel(themeClassName);
       SwingUtilities.updateComponentTreeUI(frame);
       EditorSettings.saveTheme(themeClassName);
-      if (textArea != null) {
-        textArea.setBackground(frame.getBackground());
+      if (getActiveTextArea() != null) {
+        getActiveTextArea().setBackground(frame.getBackground());
       }
       System.out.println("[INFO] Theme applied and saved: " + themeClassName);
     } catch (Exception e) {
@@ -178,13 +227,13 @@ public class Window {
     userInput.addActionListener((e) -> {
       try {
         int lineNum = Integer.parseInt(gotoLineInputF.getText());
-        int totalLines = textArea.getLineCount();
+        int totalLines = getActiveTextArea().getLineCount();
 
         if (lineNum > 0 && lineNum <= totalLines) {
-          int offset = textArea.getLineStartOffset(lineNum - 1);
-          textArea.setCaretPosition(offset);
+          int offset = getActiveTextArea().getLineStartOffset(lineNum - 1);
+          getActiveTextArea().setCaretPosition(offset);
 
-          textArea.requestFocusInWindow();
+          getActiveTextArea().requestFocusInWindow();
           gotoLineFrame.dispose();
         } else {
           Search.vibrate(gotoLineFrame);
@@ -233,23 +282,23 @@ public class Window {
     replace.addActionListener((e) -> {
       String findText = findInputF.getText();
       String replaceText = replaceInputF.getText();
-      String selection = textArea.getSelectedText();
+      String selection = getActiveTextArea().getSelectedText();
 
       if (selection != null && selection.equals(findText)) {
-        textArea.replaceSelection(replaceText);
+        getActiveTextArea().replaceSelection(replaceText);
       }
 
-      String fullText = textArea.getText();
-      int nextIndex = fullText.indexOf(findText, textArea.getCaretPosition());
+      String fullText = getActiveTextArea().getText();
+      int nextIndex = fullText.indexOf(findText, getActiveTextArea().getCaretPosition());
 
       if (nextIndex != -1) {
-        textArea.setSelectionStart(nextIndex);
-        textArea.setSelectionEnd(nextIndex + findText.length());
+        getActiveTextArea().setSelectionStart(nextIndex);
+        getActiveTextArea().setSelectionEnd(nextIndex + findText.length());
       } else {
         int wrapIndex = fullText.indexOf(findText, 0);
         if (wrapIndex != -1) {
-          textArea.setSelectionStart(wrapIndex);
-          textArea.setSelectionEnd(wrapIndex + findText.length());
+          getActiveTextArea().setSelectionStart(wrapIndex);
+          getActiveTextArea().setSelectionEnd(wrapIndex + findText.length());
         } else {
           Search.vibrate(findAndReplaceFrame);
         }
@@ -258,14 +307,15 @@ public class Window {
 
     var replaceAll = new JButton("Replace All");
     replaceAll.addActionListener((e) -> {
-      var selectedText = textArea.getSelectedText();
+      var selectedText = getActiveTextArea().getSelectedText();
 
       if (selectedText != null) {
         findInputF.setText(selectedText);
-        textArea.replaceSelection(replaceInputF.getText());
+        getActiveTextArea().replaceSelection(replaceInputF.getText());
         return;
       }
-      textArea.setText(textArea.getText().replaceAll(findInputF.getText(), replaceInputF.getText()));
+      getActiveTextArea()
+          .setText(getActiveTextArea().getText().replaceAll(findInputF.getText(), replaceInputF.getText()));
     });
 
     var replaceBtnP = new JPanel(
@@ -293,7 +343,7 @@ public class Window {
     findFrame.addWindowListener(new WindowAdapter() {
       @Override
       public void windowClosing(WindowEvent e) {
-        textArea.getHighlighter().removeAllHighlights();
+        getActiveTextArea().getHighlighter().removeAllHighlights();
       }
     });
 
@@ -304,7 +354,10 @@ public class Window {
 
     JButton searchBtn = new JButton("Search");
     searchBtn.addActionListener((e) -> {
-      com.features.Search.searchText(textArea, inputF);
+      if (inputF.getText() == null || inputF.getText().isEmpty() || inputF.getText().isBlank()) {
+        Search.vibrate(findFrame);
+      }
+      com.features.Search.searchText(getActiveTextArea(), inputF);
     });
 
     inputP.add(findL, FlowLayout.LEFT);
@@ -355,16 +408,23 @@ public class Window {
 
   public String startupInfo() {
     return "author: https://github.com/Yahm3/" +
-        "\nVersion: 0.1.0" +
-        "\nAbout: This version just has some features as it this application is still being developed";
+        "\nVersion: 0.0.1" +
+        "\nAbout: This version just has some features as it this application is still being developed" +
+        "\nResources: " +
+        "\n\t\tFlatLaf(https://www.formdev.com/flatlaf/)" +
+        "\n\t\t RSyntaxTextArea(https://github.com/bobbylight/RSTALanguageSupport)" +
+        "\n\t\t autocomplete(https://mvnrepository.com/artifact/com.fifesoft/autocomplete)" +
+        "\n\t\tGson(https://github.com/google/gson)";
   }
 
   public JScrollPane addTextArea() {
-    textArea.setEditable(true);
-    textArea.setText(startupInfo());
-    textArea.setLineWrap(true);
-    textArea.setWrapStyleWord(true);
-    textArea.addCaretListener(new CaretListener() {
+    var area = getActiveTextArea();
+    area.setEditable(true);
+    area.setText(startupInfo());
+    area.setLineWrap(true);
+    area.setWrapStyleWord(true);
+    area.addCaretListener(new CaretListener() {
+
       @Override
       public void caretUpdate(CaretEvent e) {
         JTextArea editArea = (JTextArea) e.getSource();
@@ -372,7 +432,7 @@ public class Window {
           int caretPos = editArea.getCaretPosition();
           int line = editArea.getLineOfOffset(caretPos);
           int col = caretPos - editArea.getLineStartOffset(line);
-          int lines = textArea.getLineCount();
+          int lines = getActiveTextArea().getLineCount();
           line++;
           col++;
           var perc = (line / (double) lines) * 100;
@@ -382,7 +442,7 @@ public class Window {
         }
       }
     });
-    JScrollPane scrollPane = new JScrollPane(textArea);
+    JScrollPane scrollPane = new JScrollPane(getActiveTextArea());
     return scrollPane;
   }
 
@@ -426,7 +486,7 @@ public class Window {
             if (_checkInput == JFileChooser.APPROVE_OPTION) {
               try {
                 BufferedWriter out = new BufferedWriter(new FileWriter(file));
-                out.write(textCaptured + "\n".trim());
+                out.write(textCaptured.trim() + "\n");
                 out.flush();
                 out.close();
                 System.out.println("[INFO]: Saved file: " + file.getName() + " at " + file.getAbsolutePath());
@@ -444,8 +504,8 @@ public class Window {
           }
         }
 
-      } else {
-        JOptionPane.showMessageDialog(frame, "Could not save file");
+      } else if (checkInput == JOptionPane.NO_OPTION || checkInput == JOptionPane.CLOSED_OPTION) {
+        return;
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -458,7 +518,9 @@ public class Window {
           JOptionPane.YES_NO_OPTION,
           JOptionPane.QUESTION_MESSAGE);
       if (choice == JOptionPane.YES_OPTION) {
-        saveFile(textArea);
+        saveFile(getActiveTextArea());
+      } else if (choice == JOptionPane.NO_OPTION || choice == JOptionPane.CLOSED_OPTION) {
+        return;
       }
     }
     JFileChooser fileChooser = new JFileChooser("./");
@@ -476,7 +538,7 @@ public class Window {
         while ((string1 = bufferedReader.readLine()) != null) {
           sb.append(string1).append("\n");
         }
-        textArea.setText(sb.toString());
+        getActiveTextArea().setText(sb.toString());
         bufferedReader.close();
       } catch (IOException e) {
         e.printStackTrace();
@@ -484,18 +546,46 @@ public class Window {
     }
   }
 
+  private void addNewTab(String title, String content) {
+    RSyntaxTextArea newTextArea = new RSyntaxTextArea();
+    newTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+    newTextArea.setCodeFoldingEnabled(true);
+    newTextArea.setHighlightCurrentLine(false);
+    newTextArea.setText(content);
+
+    String family = EditorSettings.getSavedFamily();
+    String style = String.valueOf(EditorSettings.getSavedStyle());
+    String size = String.valueOf(EditorSettings.getSavedSize());
+    newTextArea.setFont(new Font(family, Integer.valueOf(style), Integer.valueOf(size)));
+
+    newTextArea.setBackground(frame.getBackground());
+
+    JScrollPane scrollPane = new JScrollPane(newTextArea);
+    tabbedPane.addTab(title, scrollPane);
+
+    int index = tabbedPane.getTabCount() - 1;
+    tabbedPane.setTabComponentAt(index, createTabTitleComponent(title));
+
+    // tabbedPane.addTab(title, scrollPane);
+    tabbedPane.setSelectedComponent(scrollPane);
+  }
+
   public JMenu fileMenu() {
     JMenu fileMenu = new JMenu("File");
 
     // :NOTE: Menu stuff
     newFileItem = new JMenuItem("New file");
+    newFileItem.addActionListener((e) -> {
+      String title = "untitled " + tabCount++;
+      addNewTab(title, "");
+    });
     JMenuItem openItem = new JMenuItem("Open File");
     openItem.addActionListener((e) -> {
-      openFile(textArea);
+      openFile(getActiveTextArea());
     });
     JMenuItem saveItem = new JMenuItem("Save file");
     saveItem.addActionListener((e) -> {
-      saveFile(textArea);
+      saveFile(getActiveTextArea());
     });
     JMenuItem saveAsItem = new JMenuItem("Save As");
     JMenuItem exitItem = new JMenuItem("Exit");
@@ -569,10 +659,10 @@ public class Window {
     undoItem.addActionListener(undoAction);
     redoItem.addActionListener(redoAction);
 
-    textArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
-    textArea.getActionMap().put("Undo", undoAction);
-    textArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
-    textArea.getActionMap().put("Redo", redoAction);
+    getActiveTextArea().getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
+    getActiveTextArea().getActionMap().put("Undo", undoAction);
+    getActiveTextArea().getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
+    getActiveTextArea().getActionMap().put("Redo", redoAction);
 
     // :TODO: Implement these features
     JMenuItem cutItem = new JMenuItem("Cut");
@@ -646,16 +736,22 @@ public class Window {
   }
 
   public static void updateFont(String name, int style, int size) {
-    Font currentFont = textArea.getFont();
+    if (tabbedPane.getTabCount() == 0)
+      return;
 
-    String newName = (name != null) ? name : currentFont.getFamily();
-    int newStyle = (style != -1) ? style : currentFont.getStyle();
-    int newSize = (size != -1) ? size : currentFont.getSize();
+    for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+      JScrollPane scP = (JScrollPane) tabbedPane.getComponentAt(i);
+      RSyntaxTextArea textArea = (RSyntaxTextArea) scP.getViewport().getView();
+      if (textArea != null) {
+        Font currentFont = textArea.getFont();
+        String newName = (name != null) ? name : currentFont.getFamily();
+        int newStyle = (style != -1) ? style : currentFont.getStyle();
+        int newSize = (size != -1) ? size : currentFont.getSize();
+        textArea.setFont(new Font(newName, newStyle, newSize));
+      }
+    }
 
-    Font newFont = new Font(newName, newStyle, newSize);
-    textArea.setFont(newFont);
-
-    EditorSettings.saveFont(newName, newStyle, newSize);
+    EditorSettings.saveFont(name, style, size);
   }
 
   private static JMenu fontStyleMenu() {
