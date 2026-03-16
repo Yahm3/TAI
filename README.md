@@ -32,6 +32,18 @@ chmod +x run.sh
 
 ---
 
+# Screenshots
+
+![Large Font](screenshots/large_font.png)
+
+![Multiple tabs](screenshots/multiple_tabs.png)
+
+![Many font](screenshots/font_family.png)
+
+![Different themes](screenshots/gradient_green_theme.png)
+
+---
+
 # Contribution
 
 All Contribution are welcome, just don't modify files to put your name etc. Your PRs should actually do work.
