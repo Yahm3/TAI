@@ -16,7 +16,6 @@ import java.io.FileWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -58,6 +57,9 @@ import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.element.Paragraph;
 
 //@SuppressWarnings("unused")
 public class Window {
@@ -204,9 +206,9 @@ public class Window {
       if (getActiveTextArea() != null) {
         getActiveTextArea().setBackground(frame.getBackground());
       }
-      System.out.println("[INFO] Theme applied and saved: " + themeClassName);
+      System.out.println("[INFO]: Theme applied and saved: " + themeClassName);
     } catch (Exception e) {
-      System.err.println("[ERROR] Failed to apply theme: " + themeClassName);
+      System.err.println("[ERROR]: Failed to apply theme: " + themeClassName);
       e.printStackTrace();
     }
   }
@@ -458,54 +460,53 @@ public class Window {
   }
 
   private void saveFile(JTextArea area) {
-    if (area.getText().isEmpty() || area.getText().isBlank()) {
-      /*
-       * Save what because there is nothing already saved?
-       * But at the same time if the file was already opened from a saved state that
-       * counts as a change and therefore the user should be
-       * able to save the file even if it's empty
-       * :TODO: Do something here
-       */
-      Search.vibrate(frame);
-      return;
-    }
     try {
       String textCaptured = area.getText();
-      // :TODO: Procedurally add FileNameExtensionFilters
       JFileChooser fileChooser = new JFileChooser("./");
-      fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
-      var checkInput = fileChooser.showSaveDialog(frame);
+
+      fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Java Source Files (*.java)", "java"));
+      fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("C Source Files (*.c)", "c"));
+      fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("C++ Source Files (*.cpp, *.cc)", "cpp", "cc"));
+      fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Markdown Files (*.md)", "md"));
+
+      FileNameExtensionFilter txtFilter = new FileNameExtensionFilter("Text Files (*.txt)", "txt");
+      fileChooser.addChoosableFileFilter(txtFilter);
+      fileChooser.setFileFilter(txtFilter);
+
+      fileChooser.setAcceptAllFileFilterUsed(false);
+
+      int checkInput = fileChooser.showSaveDialog(frame);
+
       if (checkInput == JFileChooser.APPROVE_OPTION) {
         File file = fileChooser.getSelectedFile();
-        RandomAccessFile raf = new RandomAccessFile(file, "rw");
-        if ((raf.readLine()) != null) {
-          var choice = JOptionPane.showConfirmDialog(frame, "Do you want to override current file", "Save file",
-              JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-          if (choice == JOptionPane.YES_OPTION) {
-            var _checkInput = fileChooser.showSaveDialog(frame);
-            if (_checkInput == JFileChooser.APPROVE_OPTION) {
-              try {
-                BufferedWriter out = new BufferedWriter(new FileWriter(file));
-                out.write(textCaptured.trim() + "\n");
-                out.flush();
-                out.close();
-                System.out.println("[INFO]: Saved file: " + file.getName() + " at " + file.getAbsolutePath());
-              } catch (IOException e) {
-                e.printStackTrace();
-              }
-              raf.close();
-            } else {
-              raf.close();
-              return;
-            }
-          } else {
-            raf.close();
+
+        String path = file.getAbsolutePath();
+        FileNameExtensionFilter selectedFilter = (FileNameExtensionFilter) fileChooser.getFileFilter();
+        String extension = selectedFilter.getExtensions()[0];
+
+        if (!path.toLowerCase().endsWith("." + extension)) {
+          file = new File(path + "." + extension);
+        }
+
+        if (file.exists()) {
+          int choice = JOptionPane.showConfirmDialog(frame,
+              "The file '" + file.getName() + "' already exists. Overwrite?",
+              "Save Confirmation", JOptionPane.YES_NO_OPTION);
+
+          if (choice != JOptionPane.YES_OPTION) {
             return;
           }
         }
 
-      } else if (checkInput == JOptionPane.NO_OPTION || checkInput == JOptionPane.CLOSED_OPTION) {
-        return;
+        // Actual Writing Logic
+        try (BufferedWriter out = new BufferedWriter(new FileWriter(file))) {
+          out.write(textCaptured);
+          out.flush();
+          System.out.println("[INFO]: Saved file: " + file.getAbsolutePath());
+        } catch (IOException e) {
+          JOptionPane.showMessageDialog(frame, "Error saving file: " + e.getMessage());
+          e.printStackTrace();
+        }
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -519,13 +520,19 @@ public class Window {
           JOptionPane.QUESTION_MESSAGE);
       if (choice == JOptionPane.YES_OPTION) {
         saveFile(getActiveTextArea());
-      } else if (choice == JOptionPane.NO_OPTION || choice == JOptionPane.CLOSED_OPTION) {
+      } else if (choice == JOptionPane.CLOSED_OPTION) {
         return;
       }
     }
     JFileChooser fileChooser = new JFileChooser("./");
-    // :TODO: Procedurally add FileNameExtensionFilters
-    fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
+    fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Java Source Files (*.java)", "java"));
+    fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("C Source Files (*.c)", "c"));
+    fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("C++ Source Files (*.cpp, *.cc)", "cpp", "cc"));
+    fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("Markdown Files (*.md)", "md"));
+
+    FileNameExtensionFilter txtFilter = new FileNameExtensionFilter("Text Files (*.txt)", "txt");
+    fileChooser.setFileFilter(txtFilter);
+    fileChooser.setAcceptAllFileFilterUsed(false);
     var checkInput = fileChooser.showOpenDialog(frame);
     if (checkInput == JFileChooser.APPROVE_OPTION) {
       File openedFile = fileChooser.getSelectedFile();
@@ -570,6 +577,55 @@ public class Window {
     tabbedPane.setSelectedComponent(scrollPane);
   }
 
+  private void saveFileAsPDF(RSyntaxTextArea area) {
+    // :NOTE: stolen from here -> https://www.javaspring.net/blog/java-create-pdf/
+    String content = area.getText();
+    if (content.isEmpty() || content.isBlank() || content == null) {
+      JOptionPane.showMessageDialog(frame, "Could not create a PDF File from the given empty file", "ERROR",
+          JOptionPane.ERROR_MESSAGE);
+      return;
+    }
+
+    JFileChooser fileChooser = new JFileChooser("./");
+    FileNameExtensionFilter pdfFilter = new FileNameExtensionFilter("PDF Documents", "pdf");
+    fileChooser.setFileFilter(pdfFilter);
+    fileChooser.setAcceptAllFileFilterUsed(false);
+
+    int result = fileChooser.showSaveDialog(frame);
+    if (result == JFileChooser.APPROVE_OPTION) {
+      File file = fileChooser.getSelectedFile();
+
+      String path = file.getAbsolutePath();
+      FileNameExtensionFilter selectedFile = (FileNameExtensionFilter) fileChooser.getFileFilter();
+      String extension = selectedFile.getExtensions()[0];
+      if (!path.toLowerCase().endsWith("." + extension)) {
+        file = new File(path + "." + extension);
+      }
+      if (file.exists()) {
+        int choice = JOptionPane.showConfirmDialog(frame,
+            "The file '" + file.getName() + "' already exists. Overwrite?",
+            "Save Confirmation", JOptionPane.YES_NO_OPTION);
+        if (choice != JOptionPane.YES_NO_OPTION) {
+          return;
+        }
+      }
+      try {
+        PdfWriter writer = new PdfWriter(file);
+        PdfDocument pdf = new PdfDocument(writer);
+        com.itextpdf.layout.Document document = new com.itextpdf.layout.Document(pdf);
+
+        document.add(new Paragraph(content));
+        document.close();
+      } catch (Exception e) {
+        JOptionPane.showMessageDialog(frame, "Error converting file: " + e.getMessage());
+        e.printStackTrace();
+      }
+      System.out.println("[INFO]: Saved file: " + file.getAbsolutePath());
+    } else {
+      return;
+    }
+  }
+
   public JMenu fileMenu() {
     JMenu fileMenu = new JMenu("File");
 
@@ -587,7 +643,12 @@ public class Window {
     saveItem.addActionListener((e) -> {
       saveFile(getActiveTextArea());
     });
-    JMenuItem saveAsItem = new JMenuItem("Save As");
+    JMenu saveAs = new JMenu("Save As");
+    JMenuItem saveAsItem = new JMenuItem("PDF");
+    saveAsItem.addActionListener((e) -> {
+      saveFileAsPDF(getActiveTextArea());
+    });
+    saveAs.add(saveAsItem);
     JMenuItem exitItem = new JMenuItem("Exit");
 
     exitItem.addActionListener((e) -> {
@@ -600,7 +661,7 @@ public class Window {
     fileMenu.add(openItem);
     fileMenu.addSeparator();
     fileMenu.add(saveItem);
-    fileMenu.add(saveAsItem);
+    fileMenu.add(saveAs);
     fileMenu.addSeparator();
     fileMenu.add(exitItem);
     System.out.println("[INFO]: fileMenu working...");
@@ -721,14 +782,14 @@ public class Window {
           com.formdev.flatlaf.intellijthemes.FlatGradiantoMidnightBlueIJTheme.setup();
           themeClass = FlatCyanLightIJTheme.class.getName();
         } else {
-          JOptionPane.showMessageDialog(null, "Could not set " + theme_name, "ERROR", JOptionPane.ERROR_MESSAGE);
+          JOptionPane.showMessageDialog(frame, "Could not set " + theme_name, "ERROR", JOptionPane.ERROR_MESSAGE);
         }
         if (!themeClass.isEmpty()) {
           EditorSettings.saveTheme(themeClass);
         }
 
         SwingUtilities.updateComponentTreeUI(frame);
-        System.out.println("[INFO] Current theme: " + theme_name);
+        System.out.println("[INFO]: Current theme: " + theme_name);
       });
       theme.add(item);
     }
