@@ -53,6 +53,7 @@ import javax.swing.Action;
 
 import com.features.EditorSettings;
 import com.features.Search;
+import com.information.Information;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -80,7 +81,7 @@ public class Window {
 
   public Window() {
     super();
-    addNewTab("TAI V0.0.1" + tabCount++, startupInfo());
+    addNewTab("TAI V0.0.1" + tabCount++, Information.startupInfo());
     frame.setFont(
         new Font(EditorSettings.getSavedFamily(), EditorSettings.getSavedStyle(), EditorSettings.getSavedSize()));
     frame.setSize(new Dimension(maxWindow.width, maxWindow.height));
@@ -376,7 +377,14 @@ public class Window {
     JMenu helpMenu = new JMenu("Help");
 
     JMenuItem license = new JMenuItem("Licese");
+    license.addActionListener((e) -> {
+      addNewTab("LICENSE", Information.license());
+    });
+
     JMenuItem about = new JMenuItem("about");
+    about.addActionListener((e) -> {
+      addNewTab("about", Information.about());
+    });
 
     // :NOTE: Add to Menu
     helpMenu.add(license);
@@ -408,21 +416,10 @@ public class Window {
     label.setText("Ln: " + line + " Col: " + col + " " + perc_str);
   }
 
-  public String startupInfo() {
-    return "author: https://github.com/Yahm3/" +
-        "\nVersion: 0.0.1" +
-        "\nAbout: This version just has some features as it this application is still being developed" +
-        "\nResources: " +
-        "\n\t\tFlatLaf(https://www.formdev.com/flatlaf/)" +
-        "\n\t\t RSyntaxTextArea(https://github.com/bobbylight/RSTALanguageSupport)" +
-        "\n\t\t autocomplete(https://mvnrepository.com/artifact/com.fifesoft/autocomplete)" +
-        "\n\t\tGson(https://github.com/google/gson)";
-  }
-
   public JScrollPane addTextArea() {
     var area = getActiveTextArea();
     area.setEditable(true);
-    area.setText(startupInfo());
+    area.setText(Information.startupInfo());
     area.setLineWrap(true);
     area.setWrapStyleWord(true);
     area.addCaretListener(new CaretListener() {
