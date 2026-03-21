@@ -42,6 +42,8 @@ chmod +x run.sh
 
 ![Different themes](screenshots/gradient_green_theme.png)
 
+![Talking to chat](screenshots/chat.png)
+
 ---
 
 # Contribution
