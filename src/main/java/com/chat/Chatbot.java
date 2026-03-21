@@ -30,7 +30,7 @@ public class Chatbot {
           """, userMessaage.replace("\"", "\\\""));
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create("https://api.groq.com/openai/v1/chat/completions"))
-          .header("Authorization", API_KEY)
+          .header("Authorization", "Bearer " + API_KEY)
           .header("Content-Type", "application/json")
           .POST(HttpRequest.BodyPublishers.ofString(requestBody))
           .build();

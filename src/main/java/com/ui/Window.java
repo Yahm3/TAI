@@ -2,12 +2,15 @@ package com.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
@@ -53,6 +56,7 @@ import javax.swing.Action;
 
 import com.features.EditorSettings;
 import com.features.Search;
+import com.chat.Chatbot;
 import com.information.Information;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
@@ -152,7 +156,7 @@ public class Window {
     String family = EditorSettings.getSavedFamily();
     int style = EditorSettings.getSavedStyle();
     int size = EditorSettings.getSavedSize();
-    updateFont(family, style, size); // This method you already have!
+    updateFont(family, style, size);
     setVisible();
   }
 
@@ -451,6 +455,7 @@ public class Window {
     menuBar.add(fileMenu());
     menuBar.add(searchMenu());
     menuBar.add(editMenu());
+    menuBar.add(chatBotMenu());
     menuBar.add(settingMenu());
     menuBar.add(helpMenu());
     return menuBar;
@@ -836,7 +841,7 @@ public class Window {
   private static JMenu fontSizeMenu() {
     JMenu fontSizeMenu = new JMenu("Font Size");
     int[] sizes = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-        28, 29, 30, 31, 32, 33, 34, 35 };
+        28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50 };
     for (int _sizes : sizes) {
       JMenuItem item = new JMenuItem("" + _sizes);
       item.addActionListener((e) -> {
@@ -859,6 +864,65 @@ public class Window {
     }
     // :NOTE: Total number of fonts: 2252
     return fontMenu;
+  }
+
+  private void addChatToFrame() {
+    JPanel chatPnl = new JPanel(new BorderLayout());
+    chatPnl.setPreferredSize(new Dimension(300, maxWindow.height));
+    JTextArea chatArea = new JTextArea(15, 20);
+    chatArea.setEditable(false);
+    chatArea.setLineWrap(true);
+    chatArea.setWrapStyleWord(true);
+
+    JScrollPane scrollPane = new JScrollPane(chatArea);
+    chatPnl.add(scrollPane, BorderLayout.CENTER);
+
+    JPanel inputPanel = new JPanel(new BorderLayout());
+    JTextField userInputField = new JTextField();
+    JButton sendButton = new JButton("Send");
+
+    inputPanel.add(userInputField, BorderLayout.CENTER);
+    inputPanel.add(sendButton, BorderLayout.EAST);
+    chatPnl.add(inputPanel, BorderLayout.SOUTH);
+
+    sendButton.addActionListener(e -> {
+      String userMessage = userInputField.getText().trim();
+      if (!userMessage.isEmpty()) {
+        chatArea.append("You: " + userMessage + "\n");
+        userInputField.setText("");
+        new Thread(() -> {
+          Chatbot cb = new Chatbot();
+          String chatbotResponse = cb.sendMessageToChatAPI(userMessage);
+          SwingUtilities.invokeLater(() -> {
+            chatArea.append("chatbot: " + chatbotResponse + "\n");
+          });
+        }).start();
+      }
+    });
+
+    frame.add(chatPnl, BorderLayout.EAST);
+    userInputField.requestFocusInWindow();
+  }
+
+  public JMenu chatBotMenu() {
+    JMenu chat = new JMenu("Chat");
+    chat.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mousePressed(MouseEvent e) {
+        BorderLayout layout = (BorderLayout) frame.getContentPane().getLayout();
+        Component east = layout.getLayoutComponent(BorderLayout.EAST);
+        if (east != null) {
+          frame.getContentPane().remove(east);
+          frame.getContentPane().revalidate();
+          frame.getContentPane().repaint();
+        } else {
+          addChatToFrame();
+        }
+        frame.revalidate();
+        frame.repaint();
+      }
+    });
+    return chat;
   }
 
   public JMenu settingMenu() {
