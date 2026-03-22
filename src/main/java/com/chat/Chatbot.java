@@ -66,4 +66,41 @@ public class Chatbot {
     }
   }
 
+  public static void addChatToFrame() {
+    javax.swing.JPanel chatPnl = new javax.swing.JPanel(new java.awt.BorderLayout());
+    chatPnl.setPreferredSize(new java.awt.Dimension(300, com.ui.Window.maxWindow.height));
+    javax.swing.JTextArea chatArea = new javax.swing.JTextArea(15, 20);
+    chatArea.setEditable(false);
+    chatArea.setLineWrap(true);
+    chatArea.setWrapStyleWord(true);
+
+    javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(chatArea);
+    chatPnl.add(scrollPane, java.awt.BorderLayout.CENTER);
+
+    javax.swing.JPanel inputPanel = new javax.swing.JPanel(new java.awt.BorderLayout());
+    javax.swing.JTextField userInputField = new javax.swing.JTextField();
+    javax.swing.JButton sendButton = new javax.swing.JButton("Send");
+
+    inputPanel.add(userInputField, java.awt.BorderLayout.CENTER);
+    inputPanel.add(sendButton, java.awt.BorderLayout.EAST);
+    chatPnl.add(inputPanel, java.awt.BorderLayout.SOUTH);
+
+    sendButton.addActionListener(e -> {
+      String userMessage = userInputField.getText().trim();
+      if (!userMessage.isEmpty()) {
+        chatArea.append("You: " + userMessage + "\n");
+        userInputField.setText("");
+        new Thread(() -> {
+          Chatbot cb = new Chatbot();
+          String chatbotResponse = cb.sendMessageToChatAPI(userMessage);
+          javax.swing.SwingUtilities.invokeLater(() -> {
+            chatArea.append("chatbot: " + chatbotResponse + "\n");
+          });
+        }).start();
+      }
+    });
+
+    com.ui.Window.frame.add(chatPnl, java.awt.BorderLayout.EAST);
+    userInputField.requestFocusInWindow();
+  }
 }

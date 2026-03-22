@@ -56,7 +56,6 @@ import javax.swing.Action;
 
 import com.features.EditorSettings;
 import com.features.Search;
-import com.chat.Chatbot;
 import com.information.Information;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
@@ -76,8 +75,7 @@ public class Window {
   private static int tabCount = 1;
   private static JTabbedPane tabbedPane = new JTabbedPane();
   private JLabel label;
-  private static JPanel fileContentPanel = new JPanel();
-  private static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
+  public static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
       .getMaximumWindowBounds();
   private static JMenuItem newFileItem;
   private final UndoManager undo;
@@ -97,7 +95,6 @@ public class Window {
     frame.setJMenuBar(addMenuBar());
     frame.add(tabbedPane, BorderLayout.CENTER);
     frame.add(statusLabel(), BorderLayout.SOUTH);
-    frame.add(addFileContentPanel(), BorderLayout.WEST);
 
     // :NOTE: RSyntaxTextArea stuff
     RSyntaxTextArea active = getActiveTextArea();
@@ -396,17 +393,6 @@ public class Window {
     helpMenu.add(about);
     System.out.println("[INFO]: helpMenu working...");
     return helpMenu;
-  }
-
-  public JPanel addFileContentPanel() {
-    fileContentPanel.setBackground(Color.MAGENTA);
-    fileContentPanel.setSize((int) (maxWindow.width * .05), maxWindow.height);
-    fileContentPanel.setVisible(false);
-    return fileContentPanel;
-  }
-
-  public static void setFileContentPanelVisible() {
-    fileContentPanel.setVisible(true);
   }
 
   public JLabel statusLabel() {
@@ -866,44 +852,6 @@ public class Window {
     return fontMenu;
   }
 
-  private void addChatToFrame() {
-    JPanel chatPnl = new JPanel(new BorderLayout());
-    chatPnl.setPreferredSize(new Dimension(300, maxWindow.height));
-    JTextArea chatArea = new JTextArea(15, 20);
-    chatArea.setEditable(false);
-    chatArea.setLineWrap(true);
-    chatArea.setWrapStyleWord(true);
-
-    JScrollPane scrollPane = new JScrollPane(chatArea);
-    chatPnl.add(scrollPane, BorderLayout.CENTER);
-
-    JPanel inputPanel = new JPanel(new BorderLayout());
-    JTextField userInputField = new JTextField();
-    JButton sendButton = new JButton("Send");
-
-    inputPanel.add(userInputField, BorderLayout.CENTER);
-    inputPanel.add(sendButton, BorderLayout.EAST);
-    chatPnl.add(inputPanel, BorderLayout.SOUTH);
-
-    sendButton.addActionListener(e -> {
-      String userMessage = userInputField.getText().trim();
-      if (!userMessage.isEmpty()) {
-        chatArea.append("You: " + userMessage + "\n");
-        userInputField.setText("");
-        new Thread(() -> {
-          Chatbot cb = new Chatbot();
-          String chatbotResponse = cb.sendMessageToChatAPI(userMessage);
-          SwingUtilities.invokeLater(() -> {
-            chatArea.append("chatbot: " + chatbotResponse + "\n");
-          });
-        }).start();
-      }
-    });
-
-    frame.add(chatPnl, BorderLayout.EAST);
-    userInputField.requestFocusInWindow();
-  }
-
   public JMenu chatBotMenu() {
     JMenu chat = new JMenu("Chat");
     chat.addMouseListener(new MouseAdapter() {
@@ -916,7 +864,7 @@ public class Window {
           frame.getContentPane().revalidate();
           frame.getContentPane().repaint();
         } else {
-          addChatToFrame();
+          com.chat.Chatbot.addChatToFrame();
         }
         frame.revalidate();
         frame.repaint();
