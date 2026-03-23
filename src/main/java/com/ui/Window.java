@@ -71,7 +71,6 @@ public class Window {
   private static JFrame findAndReplaceFrame = new JFrame();
   private static JFrame gotoLineFrame = new JFrame();
   public static JFrame frame = new JFrame();
-  // private static RSyntaxTextArea getActiveTextArea() = new RSyntaxTextArea();
   private static int tabCount = 1;
   private static JTabbedPane tabbedPane = new JTabbedPane();
   private JLabel label;
@@ -190,7 +189,7 @@ public class Window {
     return panel;
   }
 
-  private static RSyntaxTextArea getActiveTextArea() {
+  public static RSyntaxTextArea getActiveTextArea() {
     if (tabbedPane.getTabCount() == 0)
       return null;
     JScrollPane scrollPane = (JScrollPane) tabbedPane.getSelectedComponent();
@@ -688,7 +687,9 @@ public class Window {
 
     // :NOTE: Menu stuff
     JMenuItem undoItem = new JMenuItem("Undo");
+    undoItem.setAccelerator(KeyStroke.getKeyStroke("control Z"));
     JMenuItem redoItem = new JMenuItem("Redo");
+    redoItem.setAccelerator(KeyStroke.getKeyStroke("control R"));
     Action undoAction = new AbstractAction("Undo") {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -708,17 +709,26 @@ public class Window {
     undoItem.addActionListener(undoAction);
     redoItem.addActionListener(redoAction);
 
-    getActiveTextArea().getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
     getActiveTextArea().getActionMap().put("Undo", undoAction);
-    getActiveTextArea().getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
     getActiveTextArea().getActionMap().put("Redo", redoAction);
 
-    // :TODO: Implement these features
     JMenuItem cutItem = new JMenuItem("Cut");
+    cutItem.setAccelerator(KeyStroke.getKeyStroke("control X"));
+    cutItem.addActionListener((e) -> {
+      com.features.ClipBoardManager.cut(getActiveTextArea());
+    });
+
     JMenuItem copyItem = new JMenuItem("Copy");
+    copyItem.setAccelerator(KeyStroke.getKeyStroke("control C"));
+    copyItem.addActionListener((e) -> {
+      com.features.ClipBoardManager.copy(getActiveTextArea());
+    });
+
     JMenuItem pasteItem = new JMenuItem("Paste");
-    JMenuItem deleteItem = new JMenuItem("Delete");
-    JMenuItem indentItem = new JMenuItem("Indent");
+    pasteItem.setAccelerator(KeyStroke.getKeyStroke("control V"));
+    pasteItem.addActionListener((e) -> {
+      com.features.ClipBoardManager.paste(getActiveTextArea());
+    });
 
     // :NOTE: Add to Menu
     editMenu.add(undoItem);
@@ -727,10 +737,7 @@ public class Window {
     editMenu.add(cutItem);
     editMenu.add(copyItem);
     editMenu.add(pasteItem);
-    editMenu.add(deleteItem);
     editMenu.addSeparator();
-    editMenu.add(indentItem);
-    editMenu.add(deleteItem);
     System.out.println("[INFO]: editMenu working...");
     return editMenu;
   }

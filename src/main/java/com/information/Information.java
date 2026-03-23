@@ -2,14 +2,16 @@ package com.information;
 
 public class Information {
   public static String startupInfo() {
-    return "author: https://github.com/Yahm3/" +
-        "\nVersion: 0.0.1" +
-        "\nAbout: This version just has some features as it this application is still being developed" +
-        "\nResources: " +
-        "\n\t\tFlatLaf(https://www.formdev.com/flatlaf/)" +
-        "\n\t\t RSyntaxTextArea(https://github.com/bobbylight/RSTALanguageSupport)" +
-        "\n\t\t autocomplete(https://mvnrepository.com/artifact/com.fifesoft/autocomplete)" +
-        "\n\t\tGson(https://github.com/google/gson)";
+    return """
+            author: https://github.com/Yahm3/
+            Version: 0.0.1
+            About: This version just has some features as it this application is still being developed
+            Resources:
+                      FlatLaf: (https://www.formdev.com/flatlaf/)
+                      RSyntaxTextArea: (https://github.com/bobbylight/RSTALanguageSupport)
+                      autocomplete: (https://mvnrepository.com/artifact/com.fifesoft/autocomplete)
+                      Gson(https: (https://github.com/google/gson)
+        """;
   }
 
   public static String license() {

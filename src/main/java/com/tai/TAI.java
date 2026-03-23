@@ -7,7 +7,6 @@ import com.ui.Window;
 import com.features.EditorSettings;
 import com.ui.Splash;
 
-@SuppressWarnings("unused")
 public class TAI {
   public static void init() {
     SwingUtilities.invokeLater(() -> {
@@ -30,6 +29,7 @@ public class TAI {
         break;
       }
     }
+
     if (skipSplash) {
       System.out.println("[INFO]: Running with no splash");
       init();
@@ -45,5 +45,6 @@ public class TAI {
         init();
       });
     }
+
   }
 }
