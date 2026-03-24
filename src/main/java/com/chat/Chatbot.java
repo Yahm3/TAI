@@ -6,8 +6,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Scanner;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.util.List;
 
 /*
  * :NOTE: For now I will be testing with the grok API
@@ -17,31 +19,50 @@ import com.google.gson.JsonObject;
 public class Chatbot {
   private static final String API_KEY = "";
 
-  public String sendMessageToChatAPI(String userMessaage) {
+  public String sendMessageToChatAPI(String userMessage) {
     try {
-      String requestBody = String.format("""
-          {
-            "model": "openai/gpt-oss-120b",
-            "messages": [
-              {"role": "user", "content": "%s"}
-            ],
-            "temperature": 1
-          }
-          """, userMessaage.replace("\"", "\\\""));
+      List<com.google.gson.JsonObject> history = ChatStorage.loadHistory();
+
+      JsonObject newUserMsg = new JsonObject();
+      newUserMsg.addProperty("role", "user");
+      newUserMsg.addProperty("content", userMessage);
+      history.add(newUserMsg);
+
+      JsonObject root = new JsonObject();
+      root.addProperty("model", "openai/gpt-oss-120b");
+      root.addProperty("temperature", 1);
+
+      JsonArray messagesArray = new JsonArray();
+      for (JsonObject msg : history) {
+        messagesArray.add(msg);
+      }
+      root.add("messages", messagesArray);
+
+      String finalJsonBody = new Gson().toJson(root);
+
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create("https://api.groq.com/openai/v1/chat/completions"))
           .header("Authorization", "Bearer " + API_KEY)
           .header("Content-Type", "application/json")
-          .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+          .POST(HttpRequest.BodyPublishers.ofString(finalJsonBody))
           .build();
 
       HttpClient client = HttpClient.newBuilder().build();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return parseChatbotResponse(response.body());
+        String botResponse = parseChatbotResponse(response.body());
+
+        com.google.gson.JsonObject botMsg = new com.google.gson.JsonObject();
+        botMsg.addProperty("role", "assistant");
+        botMsg.addProperty("content", botResponse);
+
+        history.add(botMsg);
+        ChatStorage.saveHistory(history);
+
+        return botResponse;
       } else {
-        return "ERROR: " + response.statusCode() + "\n" + response.body();
+        return "ERROR: " + response.statusCode() + " - " + response.body();
       }
 
     } catch (Exception e) {
