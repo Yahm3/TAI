@@ -16,7 +16,12 @@
   </properties>
 
   <dependencies>
-    <!-- Source: https://mvnrepository.com/artifact/com.fifesoft/autocomplete -->
+    <dependency>
+      <groupId>io.github.cdimascio</groupId>
+      <artifactId>dotenv-java</artifactId>
+      <version>3.2.0</version>
+    </dependency>  <!-- Source:
+    https://mvnrepository.com/artifact/com.fifesoft/autocomplete -->
     <dependency>
       <groupId>com.fifesoft</groupId>
       <artifactId>autocomplete</artifactId>

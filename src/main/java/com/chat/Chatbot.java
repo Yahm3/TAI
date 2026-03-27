@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.List;
+import io.github.cdimascio.dotenv.Dotenv;
 
 /*
  * :NOTE: For now I will be testing with the grok API
@@ -17,9 +18,13 @@ import java.util.List;
  */
 @SuppressWarnings("unused")
 public class Chatbot {
-  private static final String API_KEY = "";
+  private static final Dotenv dotenv = Dotenv.load();
+  private static final String API_KEY = dotenv.get("GROQ_API_KEY");
 
   public String sendMessageToChatAPI(String userMessage) {
+    if (API_KEY == null || API_KEY.isEmpty() || API_KEY.isBlank()) {
+      return "ERROR: API key not found in .env file";
+    }
     try {
       List<com.google.gson.JsonObject> history = ChatStorage.loadHistory();
 

@@ -10,7 +10,8 @@ public class Information {
                       FlatLaf: (https://www.formdev.com/flatlaf/)
                       RSyntaxTextArea: (https://github.com/bobbylight/RSTALanguageSupport)
                       autocomplete: (https://mvnrepository.com/artifact/com.fifesoft/autocomplete)
-                      Gson(https: (https://github.com/google/gson)
+                      Gson: (https://github.com/google/gson)
+		      DotEnv: (https://mvnrepository.com/artifact/io.github.cdimascio/dotenv-java/3.2.0)
         """;
   }
 
