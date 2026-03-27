@@ -114,13 +114,13 @@ public class Chatbot {
     sendButton.addActionListener(e -> {
       String userMessage = userInputField.getText().trim();
       if (!userMessage.isEmpty()) {
-        chatArea.append("You: " + userMessage + "\n");
+        chatArea.append("You: " + userMessage + "\n\n");
         userInputField.setText("");
         new Thread(() -> {
           Chatbot cb = new Chatbot();
           String chatbotResponse = cb.sendMessageToChatAPI(userMessage);
           javax.swing.SwingUtilities.invokeLater(() -> {
-            chatArea.append("chatbot: " + chatbotResponse + "\n");
+            chatArea.append("chatbot: " + chatbotResponse + "\n\n");
           });
         }).start();
       }
