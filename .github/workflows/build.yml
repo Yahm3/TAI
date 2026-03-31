@@ -31,13 +31,6 @@ jobs:
           mkdir -p src/main/resources/bin
           nim c -o:src/main/resources/bin/nim_hexdump -d:release src/main/nim/nim_hexdump.nim
 
-      - name: Install Nim via asdf
-        run: |
-          asdf plugin add nim
-          asdf install nim stable
-          asdf global nim stable
-          echo "$(asdf where nim)/bin" >> $GITHUB_PATH
-
       - name: Build with Maven
         run: mvn -B package --file pom.xml
         #env:
