@@ -21,6 +21,16 @@ jobs:
           distribution: "temurin"
           cache: maven
 
+      - name: Install Nim
+        uses: iffy/install-nim@v1
+        with:
+          nim-version: "stable"
+
+      - name: Compile Nim Hexdump
+        run: |
+          mkdir -p bin
+          nim c -o:bin/nim_hexdump -d:release src/main/nim/hexdump.nim
+
       - name: Build with Maven
         run: mvn -B package --file pom.xml
         #env:
