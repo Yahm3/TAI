@@ -26,11 +26,10 @@ jobs:
         with:
           nim-version: "stable"
 
-      - name: Cache Nim
-        uses: actions/cache@v4
-        with:
-          path: ~/.asdf
-          key: ${{ runner.os }}-nim-stable
+      - name: Compile Nim Hexdump
+        run: |
+          mkdir -p src/main/resources/bin
+          nim c -o:src/main/resources/bin/nim_hexdump -d:release src/main/nim/nim_hexdump.nim
 
       - name: Install Nim via asdf
         run: |
