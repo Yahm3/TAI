@@ -4,6 +4,9 @@
 
 ---
 
+# Status
+[![TAI Test](https://github.com/Yahm3/TAI/actions/workflows/build.yml/badge.svg)](https://github.com/Yahm3/TAI/actions/workflows/build.yml)
+
 # Description
 
 This is a modern java application created for simplicity and bug free usage
