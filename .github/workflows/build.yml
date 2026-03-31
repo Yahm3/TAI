@@ -21,8 +21,10 @@ jobs:
           distribution: "temurin"
           cache: maven
 
-      - name: Install Nim
-        uses: asdf-vm/actions/setup@v3
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: "stable"
 
       - name: Cache Nim
         uses: actions/cache@v4
