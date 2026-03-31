@@ -19,11 +19,14 @@ import java.io.FileWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -76,9 +79,9 @@ public class Window {
   private JLabel label;
   public static Rectangle maxWindow = GraphicsEnvironment.getLocalGraphicsEnvironment()
       .getMaximumWindowBounds();
-  private static JMenuItem newFileItem;
   private final UndoManager undo;
   private Document doc;
+  private static Map<JComponent, String> tabPaths = new HashMap<>();
 
   public Window() {
     super();
@@ -523,6 +526,7 @@ public class Window {
     var checkInput = fileChooser.showOpenDialog(frame);
     if (checkInput == JFileChooser.APPROVE_OPTION) {
       File openedFile = fileChooser.getSelectedFile();
+      String path = openedFile.getAbsolutePath();
       try {
         FileReader fileReader = new FileReader(openedFile);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -537,7 +541,12 @@ public class Window {
       } catch (IOException e) {
         e.printStackTrace();
       }
+      tabPaths.put((JComponent) tabbedPane.getSelectedComponent(), path);
     }
+  }
+
+  private String getCurrentFilePath() {
+    return tabPaths.get(tabbedPane.getSelectedComponent());
   }
 
   private void addNewTab(String title, String content) {
@@ -617,24 +626,40 @@ public class Window {
     JMenu fileMenu = new JMenu("File");
 
     // :NOTE: Menu stuff
-    newFileItem = new JMenuItem("New file");
+    JMenuItem newFileItem = new JMenuItem("New file");
+
     newFileItem.addActionListener((e) -> {
       String title = "untitled " + tabCount++;
       addNewTab(title, "");
     });
+
     JMenuItem openItem = new JMenuItem("Open File");
     openItem.addActionListener((e) -> {
       openFile(getActiveTextArea());
     });
+
+    JMenuItem viewHexItem = new JMenuItem("New file");
+    viewHexItem.addActionListener((e) -> {
+      String currentPath = getCurrentFilePath();
+      if (currentPath != null) {
+        String hexData = com.features.Hexdump.HexdumpData(currentPath);
+        addNewTab("Hex: " + currentPath, hexData);
+      } else {
+        JOptionPane.showMessageDialog(frame, "Please save the file first.");
+      }
+    });
+
     JMenuItem saveItem = new JMenuItem("Save file");
     saveItem.addActionListener((e) -> {
       saveFile(getActiveTextArea());
     });
+
     JMenu saveAs = new JMenu("Save As");
     JMenuItem saveAsItem = new JMenuItem("PDF");
     saveAsItem.addActionListener((e) -> {
       saveFileAsPDF(getActiveTextArea());
     });
+
     saveAs.add(saveAsItem);
     JMenuItem exitItem = new JMenuItem("Exit");
 
