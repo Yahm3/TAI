@@ -638,7 +638,7 @@ public class Window {
       openFile(getActiveTextArea());
     });
 
-    JMenuItem viewHexItem = new JMenuItem("New file");
+    JMenuItem viewHexItem = new JMenuItem("View as Hex");
     viewHexItem.addActionListener((e) -> {
       String currentPath = getCurrentFilePath();
       if (currentPath != null) {
@@ -671,6 +671,8 @@ public class Window {
     // :NOTE: Add to Menu
     fileMenu.add(newFileItem);
     fileMenu.add(openItem);
+    fileMenu.addSeparator();
+    fileMenu.add(viewHexItem);
     fileMenu.addSeparator();
     fileMenu.add(saveItem);
     fileMenu.add(saveAs);
