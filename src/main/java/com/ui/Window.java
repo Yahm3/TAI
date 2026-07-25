@@ -88,7 +88,7 @@ public class Window {
     addNewTab("TAI V0.0.1" + tabCount++, Information.startupInfo());
     frame.setFont(
         new Font(EditorSettings.getSavedFamily(), EditorSettings.getSavedStyle(), EditorSettings.getSavedSize()));
-    frame.setSize(new Dimension(maxWindow.width, maxWindow.height));
+    frame.setSize(new Dimension((int) (maxWindow.width * 0.8), (int) (maxWindow.height * 0.8)));
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setIconImage(new ImageIcon(getClass().getResource("/icons/sit.png")).getImage());
     frame.setLayout(new BorderLayout());
@@ -178,9 +178,7 @@ public class Window {
     closeButton.addActionListener(e -> {
       int index = tabbedPane.indexOfTabComponent(panel);
       if (index != -1) {
-        // TODO: Add a "Save before closing?" check here
         tabbedPane.remove(index);
-
         if (tabbedPane.getTabCount() == 0) {
           addNewTab("untitled " + tabCount++, "");
         }

@@ -15,6 +15,4 @@ public class ChatbotTest {
   public void shouldReturnAString() {
     assertNotNull(new com.chat.Chatbot().sendMessageToChatAPI("Some message"));
   }
-
-  // :TODO: Write a test for an invalid API_KEY
 }

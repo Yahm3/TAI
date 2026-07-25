@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 public class fileHandlerTest {
 
   /*
-   * :TODO: Test by mocking the class
    * 
    * @Test
    * 
