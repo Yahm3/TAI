@@ -6,6 +6,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Scanner;
 
+import javax.swing.JButton;
+import javax.swing.JTextPane;
+
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -92,15 +97,40 @@ public class Chatbot {
     }
   }
 
+  private static void appendToPane(JTextPane pane, String msg) {
+    try {
+      javax.swing.text.Document doc = pane.getDocument();
+      doc.insertString(doc.getLength(), msg, null);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private static String extractCodeBlock(String response) {
+    int first = response.indexOf("```");
+    if (first != -1) {
+      int startOfCode = response.indexOf("\n", first);
+      if (startOfCode == -1) {
+        startOfCode = first + 3;
+      } else {
+        startOfCode += 1;
+      }
+      int last = response.indexOf("```", startOfCode);
+      if (last != -1) {
+        return response.substring(startOfCode, last).trim();
+      }
+    }
+    return response.trim();
+  }
+
   public static void addChatToFrame() {
     javax.swing.JPanel chatPnl = new javax.swing.JPanel(new java.awt.BorderLayout());
     chatPnl.setPreferredSize(new java.awt.Dimension(300, com.ui.Window.maxWindow.height));
-    javax.swing.JTextArea chatArea = new javax.swing.JTextArea(15, 20);
-    chatArea.setEditable(false);
-    chatArea.setLineWrap(true);
-    chatArea.setWrapStyleWord(true);
 
-    javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(chatArea);
+    JTextPane chatPane = new JTextPane();
+    chatPane.setEditable(false);
+
+    javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(chatPane);
     chatPnl.add(scrollPane, java.awt.BorderLayout.CENTER);
 
     javax.swing.JPanel inputPanel = new javax.swing.JPanel(new java.awt.BorderLayout());
@@ -114,13 +144,43 @@ public class Chatbot {
     sendButton.addActionListener(e -> {
       String userMessage = userInputField.getText().trim();
       if (!userMessage.isEmpty()) {
-        chatArea.append("You: " + userMessage + "\n\n");
+        appendToPane(chatPane, "You: " + userMessage + "\n\n");
         userInputField.setText("");
+
         new Thread(() -> {
+          String apiPayloadMessage = userMessage;
+          if (apiPayloadMessage.contains("@current")) {
+            org.fife.ui.rsyntaxtextarea.RSyntaxTextArea activeArea = com.ui.Window.getActiveTextArea();
+            if (activeArea != null && !activeArea.getText().isEmpty()) {
+              String fileContent = "\n\n--- START OF CURRENT FILE ---\n"
+                  + activeArea.getText()
+                  + "\n--- END OF CURRENT FILE ---\n";
+              apiPayloadMessage = apiPayloadMessage.replace("@current", fileContent);
+            } else {
+              apiPayloadMessage = apiPayloadMessage.replace("@current", "[No file open or file is empty]");
+            }
+          }
+
           Chatbot cb = new Chatbot();
-          String chatbotResponse = cb.sendMessageToChatAPI(userMessage);
+          String chatbotResponse = cb.sendMessageToChatAPI(apiPayloadMessage);
+
           javax.swing.SwingUtilities.invokeLater(() -> {
-            chatArea.append("chatbot: " + chatbotResponse + "\n\n");
+            appendToPane(chatPane, "Chatbot: " + chatbotResponse + "\n");
+
+            if (chatbotResponse.contains("```")) {
+              JButton applyBtn = new JButton("Apply to Editor");
+              applyBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+              applyBtn.addActionListener(evt -> {
+                String extractedText = extractCodeBlock(chatbotResponse);
+                org.fife.ui.rsyntaxtextarea.RSyntaxTextArea activeArea = com.ui.Window.getActiveTextArea();
+                if (activeArea != null) {
+                  activeArea.setText(extractedText);
+                }
+              });
+              chatPane.insertComponent(applyBtn);
+            }
+            appendToPane(chatPane, "\n\n");
+            chatPane.setCaretPosition(chatPane.getDocument().getLength());
           });
         }).start();
       }
